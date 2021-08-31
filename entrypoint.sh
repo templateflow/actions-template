@@ -8,19 +8,19 @@ mkdir -p $HOME/.ssh
 chmod 700 $HOME/.ssh
 
 # Ease github.com checking
-echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> $HOME/.ssh/config
+echo -e "Host github.com\n\tStrictHostKeyChecking no\n" | install -m 600 /dev/stdin $HOME/.ssh/config
 
 # Create key file, with permissions
 echo "${SECRET_KEY}" | install -m 600 /dev/stdin $HOME/.ssh/id_rsa
+
+# Add github as trusted host
+ssh-keyscan -H github.com | install -m 600 /dev/stdin $HOME/.ssh/known_hosts
 
 # Start ssh agent
 eval "$(ssh-agent -s)"
 
 # Add key to ssh agent
 ssh-add $HOME/.ssh/id_rsa
-
-# Add github as trusted host
-# ssh-keyscan -H github.com >> $HOME/.ssh/known_hosts
 
 datalad install git@github.com:templateflow/templateflow.git
 cd templateflow/
