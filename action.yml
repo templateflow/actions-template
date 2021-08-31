@@ -1,0 +1,22 @@
+name: 'Superdataset updater'
+description: "Updates TemplateFlow's superdataset when a template has changed"
+inputs:
+  ssh-private-key:
+    description: 'A private SSH key to commit to templateflow/templateflow'
+    required: true
+  name:
+    description: 'Name that will appear in the commit'
+    required: true
+    default: 'NiPreps Bot'
+  email:
+    description: 'Email that will appear in the commit'
+    required: true
+    default: 'nipreps@gmail.com'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    SECRET_KEY: ${{ inputs.ssh-private-key }}
+  args:
+    - ${{ inputs.name }}
+    - ${{ inputs.email }}
