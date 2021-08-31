@@ -3,6 +3,8 @@
 git config --global user.name "$1"
 git config --global user.email "$2"
 
+echo "My secret: \"$SACRED_SECRET\""
+
 datalad install git@github.com:templateflow/templateflow.git
 cd templateflow/
 datalad install ${GITHUB_REPOSITORY##*/}
