@@ -14,13 +14,14 @@ echo -e "Host github.com\n\tStrictHostKeyChecking no\n" | install -m 600 /dev/st
 echo "${SECRET_KEY}" | install -m 600 /dev/stdin $HOME/.ssh/id_rsa
 
 # Add github as trusted host
-ssh-keyscan -H github.com | install -m 600 /dev/stdin $HOME/.ssh/known_hosts
+ssh-keyscan -t rsa -H github.com | install -m 600 /dev/stdin $HOME/.ssh/known_hosts
 
 # Start ssh agent
 eval "$(ssh-agent -s)"
 
 # Add key to ssh agent
-ssh-add $HOME/.ssh/id_rsa
+ssh-add - <<< "${SECRET_KEY}"
+# ssh-add $HOME/.ssh/id_rsa
 
 datalad install git@github.com:templateflow/templateflow.git
 cd templateflow/
