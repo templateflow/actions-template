@@ -13,8 +13,10 @@ echo "${SECRET_KEY}" | install -m 600 /dev/stdin $HOME/.ssh/id_rsa
 eval "$(ssh-agent -s)"
 
 # Add key to ssh agent
-# ssh-add - <<< "${SECRET_KEY}"
 ssh-add $HOME/.ssh/id_rsa
+
+# Add github as trusted host
+ssh-keyscan -H github.com >> $HOME/.ssh/known_hosts
 
 datalad install git@github.com:templateflow/templateflow.git
 cd templateflow/
