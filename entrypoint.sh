@@ -6,12 +6,11 @@ git config --global user.email "$2"
 # Start ssh agent
 eval "$(ssh-agent -s)"
 
-# Store key
+# Create ~/.ssh folder
 mkdir -p $HOME/.ssh
 chmod 700 $HOME/.ssh
-touch $HOME/.ssh/id_rsa
-chmod 600 $HOME/.ssh/id
-echo $SECRET_KEY > $HOME/.ssh/id_rsa
+# Create key file, with permissions
+echo $SECRET_KEY | install -m 600 /dev/stdin $HOME/.ssh/id_rsa
 
 # Prepare ssh client settings
 echo "Host *" > $HOME/.ssh/config
