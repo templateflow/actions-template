@@ -11,7 +11,7 @@ chmod 700 $HOME/.ssh
 echo -e "Host github.com\n\tStrictHostKeyChecking no\n" | install -m 600 /dev/stdin $HOME/.ssh/config
 
 echo "Config:"
-cat HOME/.ssh/config
+cat $HOME/.ssh/config
 
 # Create key file, with permissions
 echo "${SECRET_KEY}" | install -m 600 /dev/stdin $HOME/.ssh/id_rsa
