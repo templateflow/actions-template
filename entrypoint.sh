@@ -9,16 +9,16 @@ eval "$(ssh-agent -s)"
 # Store key
 mkdir -p $HOME/.ssh
 chmod 700 $HOME/.ssh
-touch $HOME/.ssh/id
+touch $HOME/.ssh/id_rsa
 chmod 600 $HOME/.ssh/id
-echo $SECRET_KEY > $HOME/.ssh/id
+echo $SECRET_KEY > $HOME/.ssh/id_rsa
 
 # Prepare ssh client settings
 echo "Host *" > $HOME/.ssh/config
 echo "  AddKeysToAgent yes" >> $HOME/.ssh/config
-echo "  IdentityFile ~/.ssh/id" >> $HOME/.ssh/config
+echo "  IdentityFile ~/.ssh/id_rsa" >> $HOME/.ssh/config
 
-ssh-add -k ~/.ssh/id
+ssh-add -k $HOME/.ssh/id_rsa
 
 datalad install git@github.com:templateflow/templateflow.git
 cd templateflow/
