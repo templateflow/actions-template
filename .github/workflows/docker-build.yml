@@ -29,7 +29,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: nipreps-bot
-          password: ${{ secrets.NIPREPS_BOT }}
+          password: ${{ secrets.NIPREPS_BOT_PACKAGES }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
