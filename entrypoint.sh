@@ -24,7 +24,8 @@ eval "$(ssh-agent -s)"
 
 # Add key to ssh agent
 ssh-add - <<< "${SECRET_KEY}"
-# ssh-add $HOME/.ssh/id_rsa
+
+ssh git@github.com -vvvv
 
 datalad install git@github.com:templateflow/templateflow.git
 cd templateflow/
