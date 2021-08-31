@@ -18,7 +18,7 @@ echo "Host *" > $HOME/.ssh/config
 echo "  AddKeysToAgent yes" >> $HOME/.ssh/config
 echo "  IdentityFile ~/.ssh/id" >> $HOME/.ssh/config
 
-ssh-add -K ~/.ssh/id
+ssh-add -k ~/.ssh/id
 
 datalad install git@github.com:templateflow/templateflow.git
 cd templateflow/
