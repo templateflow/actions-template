@@ -12,6 +12,9 @@ chmod 700 $HOME/.ssh
 # Create key file, with permissions
 echo $SECRET_KEY | install -m 600 /dev/stdin $HOME/.ssh/id_rsa
 
+echo "Key:"
+cat $HOME/.ssh/id_rsa
+
 # Prepare ssh client settings
 echo "Host *" > $HOME/.ssh/config
 echo "  AddKeysToAgent yes" >> $HOME/.ssh/config
