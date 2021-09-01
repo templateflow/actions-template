@@ -7,12 +7,6 @@ git config --global user.email "$2"
 mkdir -p /root/.ssh
 chmod 700 /root/.ssh
 
-# Ease github.com checking
-# echo -e "Host github.com\n\tStrictHostKeyChecking no\n" | install -m 600 /dev/stdin /root/.ssh/config
-
-# Create key file, with permissions
-echo "${SECRET_KEY}" | install -m 600 /dev/stdin /root/.ssh/id_rsa
-
 # Add github as trusted host
 ssh-keyscan -t rsa -H github.com | install -m 600 /dev/stdin /root/.ssh/known_hosts
 
