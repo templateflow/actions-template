@@ -32,7 +32,9 @@ datalad siblings configure --name gin --as-common-datasrc gin-src
 datalad push --to gin
 datalad push --to origin
 
+# Update S3
 datalad siblings -d ${GITHUB_REPOSITORY##*/}/ enable -s s3
 pushd ${GITHUB_REPOSITORY##*/}
+datalad get -r *
 git annex export master --to s3
 popd
