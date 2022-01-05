@@ -23,7 +23,7 @@ datalad update -r --merge any .
 datalad save -m "auto(${GITHUB_REPOSITORY##*/}): content update"
 
 # Update GIN
-datalad siblings add -d ${GITHUB_REPOSITORY##*/}/ --name gin \
+datalad siblings configure -d ${GITHUB_REPOSITORY##*/}/ --name gin \
         --pushurl git@gin.g-node.org:/templateflow/${GITHUB_REPOSITORY##*/}.git \
         --url https://gin.g-node.org/templateflow/${GITHUB_REPOSITORY##*/}
 git config --unset-all remote.gin.annex-ignore
