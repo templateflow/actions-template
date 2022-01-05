@@ -21,4 +21,18 @@ cd templateflow/
 datalad install ${GITHUB_REPOSITORY##*/}
 datalad update -r --merge any .
 datalad save -m "auto(${GITHUB_REPOSITORY##*/}): content update"
+
+# Update GIN
+datalad siblings add -d ${GITHUB_REPOSITORY##*/}/ --name gin \
+        --pushurl git@gin.g-node.org:/templateflow/${GITHUB_REPOSITORY##*/}.git \
+        --url https://gin.g-node.org/templateflow/${GITHUB_REPOSITORY##*/}
+git config --unset-all remote.gin.annex-ignore
+datalad siblings configure --name gin --as-common-datasrc gin-src
+
+datalad push --to gin
 datalad push --to origin
+
+datalad siblings -d ${GITHUB_REPOSITORY##*/}/ enable -s s3
+pushd ${GITHUB_REPOSITORY##*/}
+git annex export master --to s3
+popd
