@@ -19,7 +19,8 @@ ssh-add - <<< "${SECRET_KEY}"
 datalad install git@github.com:templateflow/templateflow.git
 cd templateflow/
 datalad install ${GITHUB_REPOSITORY##*/}
-datalad update -r --merge any .
+datalad update --merge any .
+datalad update -d ${GITHUB_REPOSITORY##*/} --merge any .
 datalad save -m "auto(${GITHUB_REPOSITORY##*/}): content update"
 
 # Update GIN
