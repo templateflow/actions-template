@@ -16,21 +16,35 @@ eval "$(ssh-agent -s)"
 # Add key to ssh agent
 ssh-add - <<< "${SECRET_KEY}"
 
+echo "Installing TemplateFlow Archive super-dataset ..."
 datalad install git@github.com:templateflow/templateflow.git
+
+echo "Installing template ${GITHUB_REPOSITORY##*/} ..."
 cd templateflow/
 datalad install ${GITHUB_REPOSITORY##*/}
-datalad update --merge any .
+
+echo "Updating template ${GITHUB_REPOSITORY##*/} ..."
 datalad update -d ${GITHUB_REPOSITORY##*/} --merge any .
-datalad save -m "auto(${GITHUB_REPOSITORY##*/}): content update"
 
 # Update GIN
-datalad siblings configure -d ${GITHUB_REPOSITORY##*/}/ --name gin \
+echo "Configuring g-Node/GIN remote ..."
+pushd ${GITHUB_REPOSITORY##*/}
+datalad siblings configure -d . --name gin \
         --pushurl git@gin.g-node.org:/templateflow/${GITHUB_REPOSITORY##*/}.git \
         --url https://gin.g-node.org/templateflow/${GITHUB_REPOSITORY##*/}
 git config --unset-all remote.gin.annex-ignore
 datalad siblings configure --name gin --as-common-datasrc gin-src
+datalad save -m "up: template action after content change"
 
+echo "Pushing to g-Node/GIN"
 datalad push --to gin
+
+echo "Pushing to GitHub"
+datalad push --to origin
+
+echo "Pushing super-dataset"
+popd
+datalad save -m "update(${GITHUB_REPOSITORY##*/}): template action"
 datalad push --to origin
 
 # Update S3
