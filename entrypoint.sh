@@ -36,18 +36,19 @@ git config --unset-all remote.gin.annex-ignore
 datalad siblings configure --name gin --as-common-datasrc gin-src
 datalad save -m "up: template action after content change"
 
-echo "Pushing to g-Node/GIN"
+echo "Pushing to g-Node/GIN ..."
 datalad push --to gin
 
-echo "Pushing to GitHub"
+echo "Pushing to GitHub ..."
 datalad push --to origin
 
-echo "Pushing super-dataset"
+echo "Pushing super-dataset ..."
 popd
 datalad save -m "update(${GITHUB_REPOSITORY##*/}): template action"
 datalad push --to origin
 
 # Update S3
+echo "Exporting to S3 bucket ..."
 datalad siblings -d ${GITHUB_REPOSITORY##*/}/ enable -s s3
 pushd ${GITHUB_REPOSITORY##*/}
 datalad get -r *
