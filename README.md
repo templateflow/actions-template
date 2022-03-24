@@ -9,9 +9,8 @@ The action takes environment variables as inputs (`GITHUB_REPOSITORY`) and a sec
 ## Example usage
 
 ```YAML
-uses: actions/update-superdataset@v1.0.0
-with:
-  name: NiPreps Bot
-  email: nipreps@gmail.com
-  ssh-private-key: ${{ secrets.GITHUB_PAT }}
+name: "Update TemplateFlow's superdataset"
+uses: templateflow/actions-template@main
+env:
+  SECRET_KEY: ${{ secrets.SUPER_SECRET_SSH_KEY }}
 ```
