@@ -7,8 +7,9 @@ git config --global user.email "$2"
 mkdir -p /root/.ssh
 chmod 700 /root/.ssh
 
-# Add github as trusted host
-ssh-keyscan -t rsa -H github.com | install -m 600 /dev/stdin /root/.ssh/known_hosts
+# Add github and gin.g-node.org as trusted hosts
+ssh-keyscan -H github.com | install -m 600 /dev/stdin /root/.ssh/known_hosts
+ssh-keyscan -H gin.g-node.org >> /root/.ssh/known_hosts
 
 # Start ssh agent
 eval "$(ssh-agent -s)"
