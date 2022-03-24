@@ -21,6 +21,7 @@ echo "Installing TemplateFlow Archive super-dataset ..."
 datalad install git@github.com:templateflow/templateflow.git
 
 echo "Installing template ${GITHUB_REPOSITORY##*/} ..."
+git submodule set-url -- ${GITHUB_REPOSITORY##*/} git@github.com:templateflow/${GITHUB_REPOSITORY##*/}.git
 cd templateflow/
 datalad install ${GITHUB_REPOSITORY##*/}
 
@@ -45,6 +46,7 @@ datalad push --to origin
 
 echo "Pushing super-dataset ..."
 popd
+git submodule set-url -- ${GITHUB_REPOSITORY##*/} https://github.com/templateflow/${GITHUB_REPOSITORY##*/}
 datalad save -m "update(${GITHUB_REPOSITORY##*/}): template action"
 datalad push --to origin
 
