@@ -39,16 +39,16 @@ datalad siblings configure --name gin --as-common-datasrc gin-src
 datalad save -m "up: template action after content change"
 
 echo "Pushing to g-Node/GIN ..."
-datalad push --to gin
+datalad push --to gin .
 
 echo "Pushing to GitHub ..."
-datalad push --to origin
+datalad push --to origin .
 
 echo "Pushing super-dataset ..."
 popd
 git submodule set-url -- ${GITHUB_REPOSITORY##*/} https://github.com/templateflow/${GITHUB_REPOSITORY##*/}
 datalad save -m "update(${GITHUB_REPOSITORY##*/}): template action"
-datalad push --to origin
+datalad push --to origin .
 
 # Update S3
 echo "Exporting to S3 bucket ..."
