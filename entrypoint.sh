@@ -55,5 +55,5 @@ echo "Exporting to S3 bucket ..."
 datalad siblings -d ${GITHUB_REPOSITORY##*/}/ enable -s s3
 pushd ${GITHUB_REPOSITORY##*/}
 datalad get -r *
-git annex export "${GITHUB_REF_NAME}" --to s3
+git annex export master --to s3
 popd
