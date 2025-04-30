@@ -14,6 +14,9 @@ ssh-keyscan -H gin.g-node.org >> /root/.ssh/known_hosts
 # Start ssh agent
 eval "$(ssh-agent -s)"
 
+# Clear all existing identities
+ssh-add -D
+
 # Add key to ssh agent
 ssh-add - <<< "${SECRET_KEY}"
 
