@@ -42,17 +42,26 @@ GIN answers 403 to HTTPS requests from GitHub runners (it works from elsewhere),
 
 1. Clone the template from GitHub and check out `GITHUB_SHA` on `GITHUB_REF_NAME`. `git annex init` auto-enables `gin-src` and `s3`; `gin-src` is registered if a template lacks it.
 2. Fetch and merge GIN's `git-annex` branch (it diverges from GitHub's when people push to GIN directly), `git annex get .` (export needs all content locally), copy missing content to GIN, push the branch to GIN.
-3. `git annex export <branch> --to s3`.
-4. Push the `git-annex` branch to GIN and GitHub **after** the export. The export and location records (including S3 version IDs) live only in that branch; pushing it earlier silently discards them (actions-template#3), after which `get` from `s3` fails with "unknown export location".
+3. Before exporting, check every file: its S3 ETag must equal the local MD5 (size for multipart objects, which have no MD5 ETag) and its export key must have an S3 version ID for the live `s3` remote in its `*.log.rmet`. Otherwise delete the object with a SigV4-signed `curl -X DELETE` and `git annex setpresentkey <key> <s3-uuid> 0`, so that `git annex export <branch> --to s3` uploads it and logs a version ID.
+4. Push the `git-annex` branch to GIN and GitHub **after** the export, even a partial one. The export and location records (including S3 version IDs, in `*.log.rmet`) live only in that branch; pushing it earlier silently discards them (actions-template#3), after which `get` from `s3` fails with "unknown export location". Then re-run the ETag comparison and fail on any mismatch.
 5. Bump the superdataset gitlink with `git update-index --cacheinfo` (no submodule checkout, so `.gitmodules` is never touched), skipping if the current pointer already contains the commit, and retrying the push on races.
 
 The superdataset push triggers `build-skeleton.yml` (skeleton zip to OSF, Python client update) and `check-s3.yml` there. Because the superdataset is updated last, it never points at commits whose content is missing from GIN or S3.
+
+## git-annex export behavior to keep in mind
+
+Verified against the git-annex sources for 8.20210803 (in the image) and 10.20261006 (latest); both behave the same.
+
+- `checkPresentExport` for S3 only HEADs the export path. When `export.log` lacks a record for the remote, any object already at a path is recorded as the current key **without uploading**, even if its content differs (10.x only adds a warning). The 2025-11 cleanup lost those records for many templates, which is why step 3 exists.
+- With `versioning=yes`, git-annex refuses to remove or replace an exported file whose key has no recorded S3 version ID ("no S3 version ID is recorded for this key"). Keys recorded by the bug above have none, so changing such a file makes the export fail until step 3 has re-uploaded it.
+- Without credentials, `export` checks presence through the public URL and can print `export s3 <file> ok` without writing anything.
+- Non-annexed files are exported under `GIT--<blob sha>` keys.
 
 ## Verifying the outcome
 
 A green run under the pre-2026-10 script meant nothing (no `set -e`). Check effects directly:
 
-- S3: `curl -sI https://templateflow.s3.amazonaws.com/<tpl>/<file>` (look at `Last-Modified`), or the superdataset's `.github/scripts/check-s3.py`, which HEAD-checks every annexed file git-annex lists at `[s3]`.
+- S3: compare `curl -sI https://templateflow.s3.amazonaws.com/<tpl>/<file>` ETags with the MD5 in the annex key (or of the git blob). `Last-Modified` alone is misleading, and the superdataset's `.github/scripts/check-s3.py` only checks that an object exists, not its content.
 - git-annex records: `git show origin/git-annex:export.log` must contain an entry for the live `s3` UUID (`git show origin/git-annex:remote.log`).
 - Superdataset: `gh api repos/templateflow/templateflow/contents/<tpl> --jq .sha` must equal the template's branch tip.
 - DataLad: from a fresh anonymous `datalad clone https://github.com/templateflow/templateflow`, `datalad get <tpl>/<file>` must succeed.
