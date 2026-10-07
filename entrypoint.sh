@@ -1,7 +1,19 @@
 #!/bin/bash
+set -euo pipefail
+
+: "${SECRET_KEY:?SECRET_KEY (SSH private key) is not set}"
+: "${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is not set}"
+: "${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is not set}"
+
+TPL="${GITHUB_REPOSITORY##*/}"
+BRANCH="${GITHUB_REF_NAME}"
+SHA="${GITHUB_SHA}"
 
 git config --global user.name "$1"
 git config --global user.email "$2"
+
+# GIN answers 403 to HTTPS requests from GitHub runners: route every GIN URL over SSH
+git config --global url."git@gin.g-node.org:/".insteadOf "https://gin.g-node.org/"
 
 # Create ~/.ssh folder
 mkdir -p /root/.ssh
@@ -20,43 +32,62 @@ ssh-add -D
 # Add key to ssh agent
 ssh-add - <<< "${SECRET_KEY}"
 
-echo "Installing TemplateFlow Archive super-dataset ..."
-datalad install git@github.com:templateflow/templateflow.git
+# Push the git-annex branch, merging in whatever landed on the remote meanwhile
+push_annex_branch() {
+    for _ in 1 2 3; do
+        git push "$1" git-annex && return 0
+        git fetch "$1"
+        git annex merge
+    done
+    return 1
+}
 
-echo "Installing template ${GITHUB_REPOSITORY##*/} ..."
-cd templateflow/
-git submodule set-url -- ${GITHUB_REPOSITORY##*/} git@github.com:templateflow/${GITHUB_REPOSITORY##*/}.git
-datalad install ${GITHUB_REPOSITORY##*/}
+echo "Cloning template ${TPL} at ${SHA} ..."
+git clone "git@github.com:templateflow/${TPL}.git" "${TPL}"
+cd "${TPL}"
+git checkout -B "${BRANCH}" "${SHA}"
+# Auto-enables the gin-src and s3 special remotes
+git annex init "templateflow/actions-template run ${GITHUB_RUN_ID:-local}"
 
-echo "Updating template ${GITHUB_REPOSITORY##*/} ..."
-datalad update -d ${GITHUB_REPOSITORY##*/} --merge any .
-
-# Update GIN
 echo "Configuring g-Node/GIN remote ..."
-pushd ${GITHUB_REPOSITORY##*/}
-datalad siblings configure -d . --name gin \
-        --pushurl git@gin.g-node.org:/templateflow/${GITHUB_REPOSITORY##*/}.git \
-        --url https://gin.g-node.org/templateflow/${GITHUB_REPOSITORY##*/}
-git config --unset-all remote.gin.annex-ignore
-datalad siblings configure --name gin --as-common-datasrc gin-src
-datalad save -m "up: template action after content change"
+if ! grep -q ' name=gin-src ' <<< "$(git show git-annex:remote.log)"; then
+    git annex initremote gin-src type=git autoenable=true \
+        location="https://gin.g-node.org/templateflow/${TPL}"
+fi
+git fetch gin-src
+git annex merge
+
+echo "Retrieving annexed content ..."
+git annex enableremote s3
+git annex get .
 
 echo "Pushing to g-Node/GIN ..."
-datalad push --to gin .
+git annex copy --to gin-src --not --in gin-src .
+git push gin-src "${BRANCH}"
 
-echo "Pushing to GitHub ..."
-datalad push --to origin .
-
-echo "Pushing super-dataset ..."
-popd
-git submodule set-url -- ${GITHUB_REPOSITORY##*/} https://github.com/templateflow/${GITHUB_REPOSITORY##*/}
-datalad save -m "update(${GITHUB_REPOSITORY##*/}): template action"
-datalad push --to origin .
-
-# Update S3
 echo "Exporting to S3 bucket ..."
-datalad siblings -d ${GITHUB_REPOSITORY##*/}/ enable -s s3
-pushd ${GITHUB_REPOSITORY##*/}
-datalad get -r *
-git annex export master --to s3
-popd
+git annex export "${BRANCH}" --to s3
+
+# Publish the export and location records, or clones won't know what S3 and GIN hold
+echo "Pushing git-annex branch ..."
+push_annex_branch gin-src
+push_annex_branch origin
+cd ..
+
+echo "Updating super-dataset ..."
+git clone git@github.com:templateflow/templateflow.git superdataset
+cd superdataset
+for _ in 1 2 3; do
+    CURRENT=$(git rev-parse "HEAD:${TPL}")
+    # Never move the pointer backwards if a later run already advanced it
+    if git -C "../${TPL}" merge-base --is-ancestor "${SHA}" "${CURRENT}"; then
+        echo "Super-dataset already points at ${CURRENT}, which contains ${SHA}."
+        exit 0
+    fi
+    git update-index --cacheinfo "160000,${SHA},${TPL}"
+    git commit -m "update(${TPL}): template action"
+    git push origin HEAD && exit 0
+    git fetch origin
+    git reset --hard "@{u}"
+done
+exit 1
