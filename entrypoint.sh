@@ -103,8 +103,7 @@ for f in "${files[@]}"; do
     key=$(export_key "${f}")
     s3_matches "${f}" && has_version_id "${key}" && continue
     echo "Re-uploading to S3: ${f}"
-    curl -sf -X DELETE --aws-sigv4 "aws:amz:us-east-1:s3" -K - "${S3_URL}/${f//+/%2B}" \
-        <<< "user = \"${AWS_ACCESS_KEY_ID}:${AWS_SECRET_ACCESS_KEY}\""
+    aws s3api delete-object --region us-east-1 --bucket templateflow --key "${TPL}/${f}" > /dev/null
     git annex setpresentkey "${key}" "${S3_UUID}" 0
 done
 git annex export "${BRANCH}" --to s3 && exported=1 || exported=0

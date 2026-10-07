@@ -13,7 +13,7 @@ Background: Ciric et al. 2022, *Nature Methods*, https://doi.org/10.1038/s41592-
 
 ## Layout and commands
 
-All logic is in `entrypoint.sh` (plain git and git-annex; DataLad is in the image but unused). `action.yml` passes the `name`/`email` inputs as positional args `$1`/`$2` (git identity). The `Dockerfile` copies the script onto `ghcr.io/templateflow/datalad:main`. That image was last built 2021-09-01 (Ubuntu 20.04, git 2.33, git-annex 8.20210803, datalad 0.14.7); the current `templateflow/datalad-docker` Dockerfile (Alpine) has never been published under that tag. Check versions with `docker run --rm --entrypoint git ghcr.io/templateflow/datalad:main annex version`.
+All logic is in `entrypoint.sh` (plain git and git-annex; DataLad is in the image but unused). `action.yml` passes the `name`/`email` inputs as positional args `$1`/`$2` (git identity). The `Dockerfile` adds the AWS CLI and copies the script onto `ghcr.io/templateflow/datalad:main`. That image was last built 2021-09-01 (Ubuntu 20.04, git 2.33, git-annex 8.20210803, datalad 0.14.7); the current `templateflow/datalad-docker` Dockerfile (Alpine) has never been published under that tag. Check versions with `docker run --rm --entrypoint git ghcr.io/templateflow/datalad:main annex version`.
 
 There is no test suite or CI. Local checks:
 
@@ -42,7 +42,7 @@ GIN answers 403 to HTTPS requests from GitHub runners (it works from elsewhere),
 
 1. Clone the template from GitHub and check out `GITHUB_SHA` on `GITHUB_REF_NAME`. `git annex init` auto-enables `gin-src` and `s3`; `gin-src` is registered if a template lacks it.
 2. Fetch and merge GIN's `git-annex` branch (it diverges from GitHub's when people push to GIN directly), `git annex get .` (export needs all content locally), copy missing content to GIN, push the branch to GIN.
-3. Before exporting, check every file: its S3 ETag must equal the local MD5 (size for multipart objects, which have no MD5 ETag) and its export key must have an S3 version ID for the live `s3` remote in its `*.log.rmet`. Otherwise delete the object with a SigV4-signed `curl -X DELETE` and `git annex setpresentkey <key> <s3-uuid> 0`, so that `git annex export <branch> --to s3` uploads it and logs a version ID.
+3. Before exporting, check every file: its S3 ETag must equal the local MD5 (size for multipart objects, which have no MD5 ETag) and its export key must have an S3 version ID for the live `s3` remote in its `*.log.rmet`. Otherwise delete the object with `aws s3api delete-object` (the AWS CLI is pip-installed by the `Dockerfile`; the image's curl 7.78 cannot sign S3 requests because it leaves `x-amz-content-sha256` unsigned) and `git annex setpresentkey <key> <s3-uuid> 0`, so that `git annex export <branch> --to s3` uploads it and logs a version ID.
 4. Push the `git-annex` branch to GIN and GitHub **after** the export, even a partial one. The export and location records (including S3 version IDs, in `*.log.rmet`) live only in that branch; pushing it earlier silently discards them (actions-template#3), after which `get` from `s3` fails with "unknown export location". Then re-run the ETag comparison and fail on any mismatch.
 5. Bump the superdataset gitlink with `git update-index --cacheinfo` (no submodule checkout, so `.gitmodules` is never touched), skipping if the current pointer already contains the commit, and retrying the push on races.
 
